@@ -4,22 +4,15 @@ import time
 class FlightService:
     def __init__(self):
         self.client = DuffelClient()
-        self.cache = {
-            "PAR": {
-                "data": [],
-                "timestamp": 123456
-            },
-            "BER": {
-                "data": [],
-                "timestamp": 123457
-            }
-        }
+        self.cache = {}
 
-    def search_deals(self, destination):
+    def search_deals(self, origin, destination, departure_date, return_date=None):
         now = time.time()
+        
+        cache_key = f"{origin}-{destination}-{departure_date}-{return_date}"
 
-        if destination in self.cache:
-            cache_info = self.cache[destination]
+        if cache_key in self.cache:
+            cache_info = self.cache[cache_key]
             timestamp = cache_info.get("timestamp", 0)
             if isinstance(timestamp, (int, float)):
                 if now - timestamp < 300:
@@ -28,10 +21,10 @@ class FlightService:
                         return data
 
         # Call API
-        result = self.client.get_flights(destination)
+        result = self.client.get_flights(origin, destination, departure_date, return_date)
 
         # Save cache
-        self.cache[destination] = {
+        self.cache[cache_key] = {
             "data": result,
             "timestamp": now
         }

@@ -31,9 +31,34 @@ function updateThemeIcon(isDark) {
   document.addEventListener('DOMContentLoaded', () => {
     updateThemeIcon(isDark);
     loadRecentSearches();
+    initDates();
     loadDeals(); // Load default deals
   });
 })();
+
+function initDates() {
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    const nextWeek = new Date(today);
+    nextWeek.setDate(nextWeek.getDate() + 8);
+    
+    document.getElementById("depDate").value = tomorrow.toISOString().split('T')[0];
+    document.getElementById("retDate").value = nextWeek.toISOString().split('T')[0];
+}
+
+function toggleReturnDate() {
+    const tripType = document.getElementById("tripType").value;
+    const retDateInput = document.getElementById("retDate");
+    if (tripType === "oneway") {
+        retDateInput.disabled = true;
+        retDateInput.classList.add("opacity-30", "cursor-not-allowed");
+    } else {
+        retDateInput.disabled = false;
+        retDateInput.classList.remove("opacity-30", "cursor-not-allowed");
+    }
+}
 
 // Data Fetching
 async function loadDeals() {
@@ -43,31 +68,62 @@ async function loadDeals() {
     try {
         const res = await fetch("/deals");
         const data = await res.json();
-        // The /deals endpoint returns an array directly, or object with data
         cachedData = data.data || data; 
-        renderData();
+        if (cachedData && cachedData.length > 0) {
+           sortData(); // Apply sort logic
+        } else {
+            renderData();
+        }
     } catch (e) {
         showError("Failed to load deals. Please try again later.");
     }
 }
 
 async function searchFlights() {
+  const origin = document.getElementById("originInput").value.trim().toUpperCase() || "LON";
   const city = document.getElementById("cityInput").value.trim().toUpperCase();
-  if (!city) return;
+  const depDate = document.getElementById("depDate").value;
+  let retDate = document.getElementById("retDate").value;
+  const tripType = document.getElementById("tripType").value;
+  
+  if (!city) {
+      showError("Please enter a destination city.");
+      return;
+  }
+  if (!depDate) {
+      showError("Please select a departure date.");
+      return;
+  }
+  
+  if (tripType === "oneway") {
+      retDate = "";
+  } else if (tripType === "round" && !retDate) {
+      showError("Please select a return date for a round trip.");
+      return;
+  }
 
   saveSearch(city);
   showSkeletons();
   document.getElementById("resultsTitle").innerText = `Results for ${city}`;
 
   try {
-      const res = await fetch(`/search?city=${city}`);
+      let url = `/search?origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(city)}&departure_date=${encodeURIComponent(depDate)}`;
+      if (retDate) {
+          url += `&return_date=${encodeURIComponent(retDate)}`;
+      }
+      
+      const res = await fetch(url);
       const data = await res.json();
     
       if (data.status === "no_results") {
         showNoResults(data);
       } else if (data.status === "success" && data.data) {
         cachedData = data.data;
-        renderData();
+        if (cachedData && cachedData.length > 0) {
+            sortData();
+        } else {
+            renderData();
+        }
       } else {
         showError(data.error || "An error occurred fetching results.");
       }
@@ -108,11 +164,44 @@ function loadRecentSearches() {
   `).join("");
 }
 
+function sortData() {
+    const sortVal = document.getElementById("priceSort").value;
+    
+    // Default/Recommended usually sorts price asc via backend already, but let's be explicit
+    if (cachedData.length > 0) {
+        cachedData.sort((a, b) => {
+            if (sortVal === "desc") {
+                return b.price - a.price;
+            }
+            return a.price - b.price; // default to ascend
+        });
+    }
+    renderData();
+}
+
 // Rendering
 function toggleView() {
   currentView = currentView === "cards" ? "table" : "cards";
   document.getElementById("switchViewBtn").innerText = currentView === "cards" ? "Switch to Table View" : "Switch to Cards View";
   renderData();
+}
+
+function getColorClasses(price, allPrices) {
+    if (allPrices.length === 0) return { text: "text-blue-800", bg: "bg-blue-100", darkText: "dark:text-blue-300", darkBg: "dark:bg-blue-900/30", border: "border-blue-200" };
+    
+    const sorted = [...allPrices].sort((a, b) => a - b);
+    const min = sorted[0];
+    const max = sorted[sorted.length - 1];
+    
+    if (max === min) return { text: "text-blue-800", bg: "bg-blue-100", darkText: "dark:text-blue-300", darkBg: "dark:bg-blue-900/30", border: "border-blue-200" };
+    
+    const range = max - min;
+    const isLow = price <= min + (range * 0.33);
+    const isHigh = price >= min + (range * 0.66);
+    
+    if (isLow) return { text: "text-green-800", bg: "bg-green-100", darkText: "dark:text-green-300", darkBg: "dark:bg-green-900/30", border: "border-green-300" };
+    if (isHigh) return { text: "text-red-800", bg: "bg-red-100", darkText: "dark:text-red-300", darkBg: "dark:bg-red-900/30", border: "border-red-300" };
+    return { text: "text-yellow-800", bg: "bg-yellow-100", darkText: "dark:text-yellow-300", darkBg: "dark:bg-yellow-900/30", border: "border-yellow-300" };
 }
 
 function renderData() {
@@ -133,15 +222,19 @@ function renderCards(deals) {
   container.className = "grid gap-6 md:grid-cols-2 lg:grid-cols-3 max-w-5xl mx-auto";
   container.innerHTML = "";
 
+  const allPrices = deals.map(d => d.price);
+
   deals.forEach((deal, index) => {
     const depDate = new Date(deal.departure).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' });
     const retDate = deal.return ? new Date(deal.return).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' }) : '';
 
+    const colors = getColorClasses(deal.price, allPrices);
+
     const card = `
       <div class="glass-panel p-6 rounded-3xl flex flex-col h-full transform transition duration-300 hover:-translate-y-2 hover:shadow-2xl opacity-0 animate-fade-in group" style="animation-delay: ${index * 100}ms">
-        <div class="flex justify-between items-start mb-4">
-            <h2 class="text-2xl font-extrabold tracking-tight">${deal.city || 'Destination'}</h2>
-            <div class="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 font-bold px-3 py-1 rounded-full text-lg shadow-sm border border-blue-200 dark:border-blue-800/50">
+        <div class="flex justify-between items-start mb-5">
+            <h2 class="text-2xl font-extrabold tracking-tight">${deal.city || deal.destination || 'Destination'}</h2>
+            <div class="${colors.bg} ${colors.text} ${colors.darkBg} ${colors.darkText} font-bold px-3 py-1 rounded-full text-lg shadow-sm border ${colors.border} dark:border-opacity-30">
                 £${deal.price}
             </div>
         </div>
@@ -176,16 +269,23 @@ function renderTable(deals) {
   const container = document.getElementById("results");
   container.className = "max-w-5xl mx-auto w-full"; 
   
+  const allPrices = deals.map(d => d.price);
+
   let rows = deals.map((d, index) => {
     const depDate = new Date(d.departure).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    const colors = getColorClasses(d.price, allPrices);
+    
+    let textColor = colors.text.replace("800", "600");
+    let darkTextColor = colors.darkText.replace("300", "400");
+    
     return `
-    <tr class="border-b border-gray-200 dark:border-gray-700 hover:bg-white/30 dark:hover:bg-gray-800/50 transition-colors opacity-0 animate-fade-in" style="animation-delay: ${index * 50}ms">
-      <td class="p-4 font-semibold">${d.city}</td>
-      <td class="p-4 text-blue-600 dark:text-blue-400 font-bold">£${d.price}</td>
+    <tr class="border-b border-gray-200 dark:border-gray-700 hover:bg-white/30 dark:hover:bg-gray-800/50 transition-colors opacity-0 animate-fade-in" style="animation-delay: ${index * 30}ms">
+      <td class="p-4 font-semibold">${d.city || d.destination}</td>
+      <td class="p-4 font-extrabold ${textColor} ${darkTextColor}">£${d.price}</td>
       <td class="p-4">${d.airline || '-'}</td>
       <td class="p-4">${depDate}</td>
       <td class="p-4 text-right">
-        <a href="${d.link || '#'}" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline font-semibold">
+        <a href="${d.link || '#'}" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline font-semibold w-full block">
           View
         </a>
       </td>
@@ -244,10 +344,9 @@ function showError(msg) {
     const container = document.getElementById("results");
     container.className = "max-w-3xl mx-auto w-full";
     container.innerHTML = `
-      <div class="glass-panel p-8 rounded-3xl text-center border-red-500/50 animate-fade-in">
-        <h2 class="text-2xl font-bold text-red-500 mb-2">Oops!</h2>
-        <p class="text-gray-600 dark:text-gray-400 mb-6">${msg}</p>
-        <button onclick="loadDeals()" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-xl font-semibold transition-colors duration-200">Try Reloading Deals</button>
+      <div class="glass-panel p-8 rounded-3xl text-center border border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.2)] animate-fade-in">
+        <h2 class="text-2xl font-bold text-red-500 mb-2">Notice</h2>
+        <p class="text-gray-600 dark:text-gray-300 mb-6 font-medium">${msg}</p>
       </div>
     `;
 }

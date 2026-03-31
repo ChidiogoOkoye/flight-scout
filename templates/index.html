@@ -69,45 +69,79 @@
     </div>
 
     <!-- Search Section -->
-    <div class="glass-panel rounded-3xl p-6 md:p-8 mb-10 mx-auto max-w-2xl relative z-10 text-center">
+    <div class="glass-panel rounded-3xl p-6 md:p-8 mb-10 mx-auto max-w-5xl relative z-10 text-center">
       <h2 class="text-xl md:text-2xl font-bold mb-6">Find Your Next Adventure</h2>
       
-      <div class="flex flex-col sm:flex-row gap-3">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-5">
+        <!-- Trip Type -->
+        <select id="tripType" onchange="toggleReturnDate()" class="px-4 py-3 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-md border border-white/50 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors shadow-sm font-semibold text-gray-800 dark:text-gray-200">
+            <option value="round" class="text-gray-900">Round Trip</option>
+            <option value="oneway" class="text-gray-900">One Way</option>
+        </select>
+
+        <!-- Origin -->
+        <input 
+          id="originInput"
+          type="text"
+          value="LON"
+          placeholder="Origin (e.g. LON)"
+          class="px-4 py-3 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-md border border-white/50 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors shadow-sm font-semibold uppercase"
+        />
+
+        <!-- Destination -->
         <input 
           id="cityInput"
           type="text"
-          placeholder="Enter destination city (e.g. PAR)"
-          class="flex-1 px-5 py-3.5 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-md border border-white/50 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors shadow-sm"
+          placeholder="Destination (e.g. PAR)"
+          class="px-4 py-3 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-md border border-white/50 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors shadow-sm font-semibold uppercase"
           onkeypress="if(event.key === 'Enter') searchFlights()"
         />
+
+        <!-- Departure Date -->
+        <input 
+          id="depDate"
+          type="date"
+          class="px-4 py-3 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-md border border-white/50 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors shadow-sm font-semibold text-gray-700 dark:text-gray-200"
+        />
+
+        <!-- Return Date -->
+        <input 
+          id="retDate"
+          type="date"
+          class="px-4 py-3 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-md border border-white/50 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors shadow-sm font-semibold text-gray-700 dark:text-gray-200"
+        />
+      </div>
+
+      <div class="flex justify-center gap-4">
         <button 
           onclick="searchFlights()"
-          class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3.5 rounded-xl font-semibold transition-colors duration-200 shadow-lg"
+          class="bg-blue-600 hover:bg-blue-700 text-white px-10 py-3.5 rounded-xl font-bold transition-colors duration-200 shadow-lg"
         >
-          Search
-        </button>
-        <button 
-          onclick="loadDeals()"
-          class="glass-panel px-6 py-3.5 rounded-xl font-semibold hover:bg-white/40 dark:hover:bg-white/10 transition-colors duration-200 whitespace-nowrap"
-        >
-          Top Deals
+          Search Flights
         </button>
       </div>
 
-      <div class="mt-5 flex flex-wrap justify-center gap-3 items-center text-sm font-medium">
+      <div class="mt-6 flex flex-wrap justify-center gap-3 items-center text-sm font-medium">
         <span class="text-gray-600 dark:text-gray-400">Recent:</span>
         <div id="recentSearches" class="flex flex-wrap gap-2"></div>
       </div>
     </div>
 
     <!-- Toolbar -->
-    <div class="flex justify-between items-center mb-6 max-w-5xl mx-auto px-1">
+    <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6 max-w-5xl mx-auto px-1">
         <h3 class="text-xl font-bold tracking-tight" id="resultsTitle">Featured Deals</h3>
-        <button onclick="toggleView()" 
-            class="text-sm font-semibold glass-panel px-4 py-2 rounded-lg hover:scale-105 transition-transform duration-200"
-            id="switchViewBtn">
-            Switch to Table View
-        </button>
+        <div class="flex flex-wrap justify-center gap-3">
+            <select id="priceSort" onchange="sortData()" class="text-sm font-semibold glass-panel px-4 py-2 rounded-lg cursor-pointer focus:outline-none hover:bg-white/20 dark:hover:bg-gray-700/50 transition-colors">
+                <option value="" class="text-gray-900">Sort: Recommended</option>
+                <option value="asc" class="text-gray-900">Price: Low to High</option>
+                <option value="desc" class="text-gray-900">Price: High to Low</option>
+            </select>
+            <button onclick="toggleView()" 
+                class="text-sm font-semibold glass-panel px-4 py-2 rounded-lg hover:bg-white/40 dark:hover:bg-gray-700/50 transition-colors duration-200"
+                id="switchViewBtn">
+                Switch to Table View
+            </button>
+        </div>
     </div>
 
     <!-- Results Section -->

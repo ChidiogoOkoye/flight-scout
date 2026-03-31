@@ -1,6 +1,5 @@
 import requests
 import os
-from datetime import datetime, timedelta
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -17,23 +16,29 @@ class DuffelClient:
             "Accept": "application/json"
         }
 
-    def get_flights(self, destination):
+    def get_flights(self, origin, destination, departure_date, return_date=None):
         if not self.token:
             print("Warning: DUFFEL_ACCESS_TOKEN missing or invalid in .env")
             return []
 
-        # Duffel requires a departure date.  it is set to 30 days from now.
-        departure_date = (datetime.now() + timedelta(days=30)).strftime("%Y-%m-%d")
+        slices = [
+            {
+                "origin": origin,
+                "destination": destination,
+                "departure_date": departure_date
+            }
+        ]
+        
+        if return_date:
+            slices.append({
+                "origin": destination,
+                "destination": origin,
+                "departure_date": return_date
+            })
 
         payload = {
             "data": {
-                "slices": [
-                    {
-                        "origin": "LON",
-                        "destination": destination,
-                        "departure_date": departure_date
-                    }
-                ],
+                "slices": slices,
                 "passengers": [{"type": "adult"}],
                 "cabin_class": "economy"
             }
@@ -44,7 +49,7 @@ class DuffelClient:
                 self.base_url,
                 headers=self.headers,
                 json=payload,
-                timeout=15
+                timeout=20
             )
             response.raise_for_status()
             data = response.json()
@@ -60,28 +65,29 @@ class DuffelClient:
         flights = []
         offers = data["data"]["offers"]
         
-        # Limit to top 10 offers
-        for offer in offers[:10]:
+        offers = sorted(offers, key=lambda o: float(o["total_amount"]))
+        
+        for offer in offers[:20]:
             try:
                 price = offer["total_amount"]
-                
-                # Owner is usually the airline
                 airline_name = offer["owner"]["name"]
                 
-                # Slices represent the routing
-                slices = offer["slices"][0]
-                departure_time = slices["segments"][0]["departing_at"]
+                slices_data = offer["slices"]
+                departure_time = slices_data[0]["segments"][0]["departing_at"]
                 
-                # Return time is empty for one-way searches
                 return_time = ""
+                if len(slices_data) > 1:
+                    return_time = slices_data[1]["segments"][0]["departing_at"]
                 
                 flights.append({
-                    "city": destination,
-                    "price": price,
+                    "city": destination,  
+                    "origin": origin,
+                    "destination": destination,
+                    "price": float(price),
                     "airline": airline_name,
                     "departure": departure_time,
                     "return": return_time,
-                    "link": f"https://www.skyscanner.net/transport/flights/lon/{destination.lower()}"
+                    "link": f"https://www.skyscanner.net/transport/flights/{origin.lower()}/{destination.lower()}/{departure_date}/{return_date if return_date else ''}"
                 })
             except (KeyError, IndexError) as e:
                 print(f"Skipped mapping flight due to missing data: {e}")
