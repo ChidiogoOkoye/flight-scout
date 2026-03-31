@@ -1,0 +1,125 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.venv
+
+# Flask
+instance/
+.webassets-cache
+
+# Flask environment variables
+.env
+.env.local
+.env.*.local
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+instance/
+
+# Node.js and Frontend
+node_modules/
+package-lock.json
+yarn.lock
+dist/
+.parcel-cache
+.next
+out
+
+# Tailwind CSS
+/static/css/tailwind.css
+
+# IDE and Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+.sublime-project
+.sublime-workspace
+*.code-workspace
+.vim/
+.project
+.pydevproject
+.settings/
+*.iml
+
+# OS
+Thumbs.db
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.hypothesis/
+
+# OS specific
+.env.local
+.env.*.local
+
+# Compiled CSS/JS
+/static/dist/
+/static/css/
+/static/js/*.bundle.js
+
+# Temporary files
+*.tmp
+*.bak
+*.backup
+~$*
+
+# IDE specific
+.vscode/settings.json
+.vscode/extensions.json
+.idea/
+*.sublime-workspace
+
+#duffel
+duffel_err.json
+duffel_err2.json
+duffel_err3.json
+duffel_err4.json
+duffel_err_beta.json
+error.log
+err.txt
